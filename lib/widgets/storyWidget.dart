@@ -36,7 +36,16 @@ class _StoryWidget extends State<StoryWidget> {
   @override
   void initState() {
     super.initState();
-    _storyBloc = StoryBloc(widget.slugBloc.slug);
+    _storyBloc = StoryBloc(
+      widget.slugBloc.slug, 
+      widget.slugBloc.storyBannerAd
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.slugBloc.storyBannerAd.disposeAllBanner();
+    super.dispose();
   }
 
   Widget build(BuildContext context) {
@@ -59,6 +68,12 @@ class _StoryWidget extends State<StoryWidget> {
 
               return Column(
                 children: [
+                  // top banner ad space
+                  if(isNewAdsActivated)
+                    Container(
+                      height: 50,
+                      color: Colors.transparent,
+                    ),
                   Expanded(
                     child: ListView(children: [
                       if(isStoryWidgetAdsActivated)
@@ -69,6 +84,7 @@ class _StoryWidget extends State<StoryWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                         SizedBox(height: 16),
                       ],
@@ -90,6 +106,7 @@ class _StoryWidget extends State<StoryWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                       SizedBox(height: 16),
                       _buildUpdateDateWidget(story),
@@ -105,6 +122,7 @@ class _StoryWidget extends State<StoryWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                         SizedBox(height: 16),
                       ],
@@ -116,6 +134,7 @@ class _StoryWidget extends State<StoryWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                         SizedBox(height: 16),
                       ],
@@ -125,6 +144,7 @@ class _StoryWidget extends State<StoryWidget> {
                     MMAdBanner(
                       adUnitId: story.storyAd.stUnitId,
                       adSize: AdmobBannerSize.BANNER,
+                      isKeepAlive: true,
                     ),
                 ],
               );
@@ -411,6 +431,7 @@ class _StoryWidget extends State<StoryWidget> {
                         adUnitId: story.storyAd.aT1UnitId,
                         adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                         widthPadding: 16,
+                        isKeepAlive: true,
                       ),
                     ],
                     if(isStoryWidgetAdsActivated && (!aT2IsActivated && unStyleParagraphCount == storyAT2AdIndex)) 
@@ -420,6 +441,7 @@ class _StoryWidget extends State<StoryWidget> {
                         adUnitId: story.storyAd.aT2UnitId,
                         adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                         widthPadding: 16,
+                        isKeepAlive: true,
                       ),
                     ],
                   ],
@@ -605,8 +627,11 @@ class _StoryWidget extends State<StoryWidget> {
           ],
         ),
       ),
-      onTap: () {
+      onTap: () async{
         widget.slugBloc.slug = relatedItem.slug;
+        if(isNewAdsActivated) {
+          await widget.slugBloc.storyBannerAd.disposeAllBanner();
+        }
         _storyBloc.fetchStory(relatedItem.slug);
       },
     );

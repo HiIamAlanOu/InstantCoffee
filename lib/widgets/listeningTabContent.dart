@@ -5,19 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:readr_app/blocs/listeningTabContentBloc.dart';
 import 'package:readr_app/helpers/apiResponse.dart';
 import 'package:readr_app/helpers/dataConstants.dart';
+import 'package:readr_app/helpers/listingBannerAd.dart';
 import 'package:readr_app/models/record.dart';
 import 'package:readr_app/models/recordList.dart';
 import 'package:readr_app/models/section.dart';
-import 'package:readr_app/models/sectionAd.dart';
 import 'package:readr_app/pages/storyPage.dart';
 import 'package:readr_app/widgets/errorStatelessWidget.dart';
 import 'package:readr_app/widgets/mMAdBanner.dart';
 
 class ListeningTabContent extends StatefulWidget {
   final Section section;
+  final ListingBannerAd listingBannerAd;
   final ScrollController scrollController;
   ListeningTabContent({
     @required this.section,
+    @required this.listingBannerAd,
     @required this.scrollController,
   });
 
@@ -26,28 +28,32 @@ class ListeningTabContent extends StatefulWidget {
 }
 
 class _ListeningTabContentState extends State<ListeningTabContent> {
-  SectionAd _sectionAd;
+  ListingBannerAd _listingBannerAd;
+  
   ListeningTabContentBloc _listeningTabContentBloc;
 
   @override
   void initState() {
-    _setAds();
-    _listeningTabContentBloc = ListeningTabContentBloc();
-    super.initState();
-  }
+    _listingBannerAd = widget.listingBannerAd;
 
-  _setAds() {
-    _sectionAd = widget.section.sectionAd;
+    _listeningTabContentBloc = ListeningTabContentBloc(
+      widget.section.sectionAd,
+      _listingBannerAd,
+    );
+    super.initState();
   }
 
   @override
   void dispose() {
     _listeningTabContentBloc.dispose();
+    _listingBannerAd?.disposeAllBanner();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    _listingBannerAd.setAdPositionData(MediaQuery.of(context).padding);
+
     return RefreshIndicator(
       onRefresh: () async {
         _listeningTabContentBloc.refreshTheList();
@@ -57,9 +63,9 @@ class _ListeningTabContentState extends State<ListeningTabContent> {
           Expanded(
             child: _buildListeningTabContentBody(),
           ),
-          if(isListeningTabContentAdsActivated && _sectionAd.stUnitId != '')
+          if(isListeningTabContentAdsActivated && _listeningTabContentBloc.sectionAd.stUnitId != '')
             MMAdBanner(
-              adUnitId: _sectionAd.stUnitId,
+              adUnitId: _listeningTabContentBloc.sectionAd.stUnitId,
               adSize: AdmobBannerSize.BANNER,
             ),
         ],
@@ -103,41 +109,82 @@ class _ListeningTabContentState extends State<ListeningTabContent> {
 
   Widget _buildTheRecordList(
       BuildContext context, ListeningTabContentBloc listeningTabContentBloc, RecordList recordList, Status status) {
-    return ListView.builder(
+    return CustomScrollView(
       controller: widget.scrollController,
-      itemCount: recordList.length,
-      itemBuilder: (context, index) {
-        listeningTabContentBloc.loadingMore(index);
+      slivers: [
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (BuildContext context, int index) {
+              listeningTabContentBloc.loadingMore(index);
 
-        if (index == 0) {
-          return _buildTheFirstItem(context, recordList[index]);
-        }
+              if (index == 0) {
+                return _buildTheFirstItem(context, recordList[index]);
+              }
 
-        return Column(
-          children: [
-            if(isListeningTabContentAdsActivated && index == noCarouselAT1AdIndex)
-              MMAdBanner(
-                adUnitId: _sectionAd.aT1UnitId,
-                adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
-              ),
-            _buildListItem(context, recordList[index]),
-            if(isListeningTabContentAdsActivated && index == noCarouselAT2AdIndex)
-              MMAdBanner(
-                adUnitId: _sectionAd.aT2UnitId,
-                adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
-              ),
-            if(isListeningTabContentAdsActivated && index == noCarouselAT3AdIndex)
-              MMAdBanner(
-                adUnitId: _sectionAd.aT3UnitId,
-                adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
-              ),
-            if (index == recordList.length - 1 &&
-                status == Status.LOADINGMORE)
-              CupertinoActivityIndicator(),
-          ],
-        );
-      }
+              return Column(
+                children: [
+                  if(isListeningTabContentAdsActivated && index == noCarouselAT1AdIndex)
+                    MMAdBanner(
+                      adUnitId: _listeningTabContentBloc.sectionAd.aT1UnitId,
+                      adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
+                    ),
+                  _buildListItem(context, recordList[index]),
+                  if(isListeningTabContentAdsActivated && index == noCarouselAT2AdIndex)
+                    MMAdBanner(
+                      adUnitId: _listeningTabContentBloc.sectionAd.aT2UnitId,
+                      adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
+                    ),
+                  if(isListeningTabContentAdsActivated && index == noCarouselAT3AdIndex)
+                    MMAdBanner(
+                      adUnitId: _listeningTabContentBloc.sectionAd.aT3UnitId,
+                      adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
+                    ),
+                  if (index == recordList.length - 1 &&
+                      status == Status.LOADINGMORE)
+                    CupertinoActivityIndicator(),
+                ],
+              );
+            },
+            childCount: recordList.length,
+          ),
+        ),
+      ],
     );
+    // return ListView.builder(
+    //   controller: widget.scrollController,
+    //   itemCount: recordList.length,
+    //   itemBuilder: (context, index) {
+    //     listeningTabContentBloc.loadingMore(index);
+
+    //     if (index == 0) {
+    //       return _buildTheFirstItem(context, recordList[index]);
+    //     }
+
+    //     return Column(
+    //       children: [
+    //         if(isListeningTabContentAdsActivated && index == noCarouselAT1AdIndex)
+    //           MMAdBanner(
+    //             adUnitId: _listeningTabContentBloc.sectionAd.aT1UnitId,
+    //             adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
+    //           ),
+    //         _buildListItem(context, recordList[index]),
+    //         if(isListeningTabContentAdsActivated && index == noCarouselAT2AdIndex)
+    //           MMAdBanner(
+    //             adUnitId: _listeningTabContentBloc.sectionAd.aT2UnitId,
+    //             adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
+    //           ),
+    //         if(isListeningTabContentAdsActivated && index == noCarouselAT3AdIndex)
+    //           MMAdBanner(
+    //             adUnitId: _listeningTabContentBloc.sectionAd.aT3UnitId,
+    //             adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
+    //           ),
+    //         if (index == recordList.length - 1 &&
+    //             status == Status.LOADINGMORE)
+    //           CupertinoActivityIndicator(),
+    //       ],
+    //     );
+    //   }
+    // );
   }
 
   Widget _buildTheFirstItem(BuildContext context, Record record) {
@@ -176,15 +223,7 @@ class _ListeningTabContentState extends State<ListeningTabContent> {
           ),
         ],
       ),
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => StoryPage(
-                      slug: record.slug,
-                      isListeningWidget: true,
-                    )));
-      },
+      onTap: navigateToStoryPage(context, record.slug),
     );
   }
 
@@ -236,15 +275,26 @@ class _ListeningTabContentState extends State<ListeningTabContent> {
           ],
         ),
       ),
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => StoryPage(
-                      slug: record.slug,
-                      isListeningWidget: true,
-                    )));
-      },
+      onTap: navigateToStoryPage(context, record.slug),
     );
   }
+  
+  Function navigateToStoryPage(BuildContext context, String slug) =>
+      () async{
+        if(isNewAdsActivated) {
+          _listingBannerAd?.disposeAllBanner();
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => 
+                StoryPage(slug: slug, isListeningWidget: true,))
+          );
+          _listingBannerAd.runningAllBanner(_listeningTabContentBloc.sectionAd.stUnitId);
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => 
+                StoryPage(slug: slug, isListeningWidget: true,))
+          );
+        }
+      };
 }

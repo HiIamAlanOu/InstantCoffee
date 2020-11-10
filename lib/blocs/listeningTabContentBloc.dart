@@ -2,16 +2,23 @@ import 'dart:async';
 
 import 'package:readr_app/helpers/apiConstants.dart';
 import 'package:readr_app/helpers/apiResponse.dart';
+import 'package:readr_app/helpers/dataConstants.dart';
+import 'package:readr_app/helpers/listingBannerAd.dart';
+import 'package:readr_app/models/sectionAd.dart';
 import 'package:readr_app/services/listeningTabContentService.dart';
 import 'package:readr_app/models/recordList.dart';
 
 class ListeningTabContentBloc {
   String _endpoint = listeningWidgetApi;
   bool _isLoading = false;
+  bool _isDispose = false;
   
+  ListingBannerAd _listingBannerAd;
   ListeningTabContentService _listeningTabContentService;
-
+  
+  SectionAd _sectionAd;
   RecordList _records;
+  SectionAd get sectionAd => _sectionAd;
   RecordList get records => _records;
 
   StreamController _listeningTabContentController;
@@ -20,7 +27,13 @@ class ListeningTabContentBloc {
   Stream<ApiResponse<RecordList>> get listeningTabContentStream =>
       _listeningTabContentController.stream;
 
-  ListeningTabContentBloc() {
+  ListeningTabContentBloc(
+    SectionAd sectionAd,
+    ListingBannerAd listingBannerAd,
+  ) {
+    _sectionAd = sectionAd;
+    _listingBannerAd = listingBannerAd;
+    
     _records = RecordList();
     _listeningTabContentService = ListeningTabContentService();
     _listeningTabContentController =
@@ -53,6 +66,10 @@ class ListeningTabContentBloc {
       latests = latests.filterDuplicatedSlugByAnother(_records);
       _records.addAll(latests);
       _isLoading = false;
+
+      if(isNewAdsActivated && !_isDispose) {
+        _listingBannerAd.runningAllBanner(_sectionAd.stUnitId);
+      }
       sinkToAdd(ApiResponse.completed(_records));
     } catch (e) {
       _isLoading = false;
@@ -77,6 +94,7 @@ class ListeningTabContentBloc {
   }
 
   dispose() {
+    _isDispose = true;
     _listeningTabContentController?.close();
   }
 }

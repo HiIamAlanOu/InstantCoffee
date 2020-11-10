@@ -14,26 +14,42 @@ class StoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool needToPop = true;
     SlugBloc _slugBloc = SlugBloc(slug);
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: appColor,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share),
-            tooltip: 'share',
-            onPressed: () {
-              String url = _slugBloc.getShareUrlFromSlug(isListeningWidget);
-              Share.share(url);
-            },
-          )
-        ],
+    PreferredSizeWidget _appBar = AppBar(
+      backgroundColor: appColor,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios),
+        onPressed: () async{
+          if(isNewAdsActivated && needToPop) {
+            needToPop = false;
+            await _slugBloc.storyBannerAd.disposeAllBanner();
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pop();
+          }
+        }
       ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.share),
+          tooltip: 'share',
+          onPressed: () {
+            String url = _slugBloc.getShareUrlFromSlug(isListeningWidget);
+            Share.share(url);
+          },
+        )
+      ],
+    );
+
+    _slugBloc.storyBannerAd.setAdPositionData(
+      MediaQuery.of(context).padding, 
+      _appBar.preferredSize.height
+    );
+
+    return Scaffold(
+      appBar: _appBar,
       body: isListeningWidget
           ? ListeningWidget(slugBloc: _slugBloc)
           : StoryWidget(slugBloc: _slugBloc),

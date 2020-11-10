@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:readr_app/helpers/apiConstants.dart';
 import 'package:readr_app/helpers/apiResponse.dart';
+import 'package:readr_app/helpers/dataConstants.dart';
+import 'package:readr_app/helpers/storyBannerAd.dart';
 import 'package:readr_app/models/listening.dart';
 import 'package:readr_app/models/storyAd.dart';
 import 'package:readr_app/services/listeningTabContentService.dart';
@@ -12,6 +14,7 @@ import 'package:readr_app/services/listeningWidgetService.dart';
 import 'package:readr_app/models/recordList.dart';
 
 class ListeningWidgetBloc {
+  StoryBannerAd _storyBannerAd;
   ListeningWidgetService _listeningWidgetService;
   ListeningTabContentService _listeningTabContentService;
 
@@ -23,7 +26,8 @@ class ListeningWidgetBloc {
   Stream<ApiResponse<TabContentState>> get listeningWidgetStream =>
       _listeningWidgetController.stream;
 
-  ListeningWidgetBloc(String slug) {
+  ListeningWidgetBloc(String slug, StoryBannerAd storyBannerAd) {
+    _storyBannerAd = storyBannerAd;
     _listeningWidgetService = ListeningWidgetService();
     _listeningTabContentService = ListeningTabContentService();
     _listeningWidgetController =
@@ -56,7 +60,12 @@ class ListeningWidgetBloc {
       final storyAdMaps = json.decode(storyAdString);
 
       listening.storyAd = StoryAd.fromJson(storyAdMaps['videohub']);
-      
+
+      if(isNewAdsActivated) {
+        _storyBannerAd.hdBannerAd.configBannerAd(listening.storyAd.hDUnitId);
+        _storyBannerAd.stBannerAd.configBannerAd(listening.storyAd.stUnitId);
+        await _storyBannerAd.loadAndShowAllBanner();
+      }
       sinkToAdd(ApiResponse.completed(
           TabContentState(listening: listening, recordList: recordList)));
     } catch (e) {

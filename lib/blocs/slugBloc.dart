@@ -1,8 +1,13 @@
+import 'package:readr_app/helpers/storyBannerAd.dart';
+
 class SlugBloc {
   String slug;
 
+  StoryBannerAd storyBannerAd;
+
   SlugBloc(String inputSlug) {
     slug = inputSlug;
+    storyBannerAd = StoryBannerAd();
   }
 
   String getShareUrlFromSlug(bool isListeningWidget) {

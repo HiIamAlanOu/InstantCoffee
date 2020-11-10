@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:readr_app/helpers/apiConstants.dart';
 import 'package:readr_app/helpers/apiResponse.dart';
+import 'package:readr_app/helpers/dataConstants.dart';
+import 'package:readr_app/helpers/listingBannerAd.dart';
+import 'package:readr_app/models/sectionAd.dart';
 import 'package:readr_app/services/editorChoiceService.dart';
 import 'package:readr_app/models/recordList.dart';
 import 'package:readr_app/services/recordService.dart';
@@ -9,12 +12,16 @@ import 'package:readr_app/services/recordService.dart';
 class TabContentBloc {
   String _endpoint = latestAPI;
   bool _isLoading = false;
-  
+  bool _isDispose = false;
+
+  ListingBannerAd _listingBannerAd;
   RecordService _recordService;
   EditorChoiceService _editorChoiceService;
 
+  SectionAd _sectionAd;
   RecordList _records;
   RecordList _editorChoices;
+  SectionAd get sectionAd => _sectionAd;
   RecordList get records => _records;
   RecordList get editorChoices => _editorChoices;
 
@@ -24,7 +31,16 @@ class TabContentBloc {
   Stream<ApiResponse<TabContentState>> get recordListStream =>
       _recordListController.stream;
 
-  TabContentBloc(String id, String type, bool needCarousel) {
+  TabContentBloc(
+    String id, 
+    String type, 
+    bool needCarousel, 
+    SectionAd sectionAd,
+    ListingBannerAd listingBannerAd,
+  ) {
+    _sectionAd = sectionAd;
+    _listingBannerAd = listingBannerAd;
+    
     _records = RecordList();
     _recordService = RecordService();
 
@@ -53,6 +69,9 @@ class TabContentBloc {
       latests = latests.filterDuplicatedSlugByAnother(_records);
       _records.addAll(latests);
 
+      if(isNewAdsActivated && !_isDispose) {
+        _listingBannerAd.runningAllBanner(_sectionAd.stUnitId);
+      }
       sinkToAdd(ApiResponse.completed(TabContentState(
           editorChoiceList: _editorChoices, recordList: _records)));
     } catch (e) {
@@ -78,6 +97,10 @@ class TabContentBloc {
       latests = latests.filterDuplicatedSlugByAnother(_records);
       _records.addAll(latests);
       _isLoading = false;
+
+      if(isNewAdsActivated && !_isDispose) {
+        _listingBannerAd.runningAllBanner(_sectionAd.stUnitId);
+      }
       sinkToAdd(ApiResponse.completed(TabContentState(
           editorChoiceList: _editorChoices, recordList: _records)));
     } catch (e) {
@@ -121,6 +144,7 @@ class TabContentBloc {
   }
 
   dispose() {
+    _isDispose = true;
     _recordListController?.close();
   }
 }

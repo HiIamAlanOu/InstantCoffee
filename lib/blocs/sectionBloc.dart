@@ -9,17 +9,18 @@ import 'package:readr_app/models/sectionList.dart';
 import 'package:readr_app/services/sectionService.dart';
 
 class SectionBloc {
+  SectionList sectionList;
+
   SectionService _sectionService;
 
   StreamController _sectionListController;
-
   StreamSink<ApiResponse<SectionList>> get sectionListSink =>
       _sectionListController.sink;
-
   Stream<ApiResponse<SectionList>> get sectionListStream =>
       _sectionListController.stream;
 
   SectionBloc() {
+    sectionList = SectionList();
     _sectionService = SectionService();
     _sectionListController = StreamController<ApiResponse<SectionList>>();
     fetchSectionList();
@@ -35,7 +36,8 @@ class SectionBloc {
     sinkToAdd(ApiResponse.loading('Fetching Tab Content'));
 
     try {
-      SectionList sectionList = await _sectionService.fetchSectionList();
+      sectionList.clear();
+      sectionList = await _sectionService.fetchSectionList();
       
       String sectionAdJsonFileLocation = Platform.isIOS
       ? 'assets/data/iOSSectionAd.json'

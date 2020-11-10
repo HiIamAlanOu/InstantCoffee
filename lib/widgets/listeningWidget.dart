@@ -26,8 +26,17 @@ class _ListeningWidget extends State<ListeningWidget> {
 
   @override
   void initState() {
-    _listeningWidgetBloc = ListeningWidgetBloc(widget.slugBloc.slug);
+    _listeningWidgetBloc = ListeningWidgetBloc(
+      widget.slugBloc.slug, 
+      widget.slugBloc.storyBannerAd
+    );
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    widget.slugBloc.storyBannerAd.disposeAllBanner();
+    super.dispose();
   }
 
   Widget build(BuildContext context) {
@@ -48,6 +57,12 @@ class _ListeningWidget extends State<ListeningWidget> {
 
               return Column(
                 children: [
+                  // top banner ad space
+                  if(isNewAdsActivated)
+                    Container(
+                      height: 50,
+                      color: Colors.transparent,
+                    ),
                   Expanded(
                     child: ListView(children: [
                       YoutubeWidget(
@@ -62,6 +77,7 @@ class _ListeningWidget extends State<ListeningWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                         SizedBox(height: 16),
                       ],
@@ -77,6 +93,7 @@ class _ListeningWidget extends State<ListeningWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                         SizedBox(height: 16),
                       ],
@@ -91,6 +108,7 @@ class _ListeningWidget extends State<ListeningWidget> {
                           adSize: AdmobBannerSize.MEDIUM_RECTANGLE,
                           widthPadding: 16,
                           leftAndRightPadding: 16,
+                          isKeepAlive: true,
                         ),
                         SizedBox(height: 16),
                       ],
@@ -100,6 +118,7 @@ class _ListeningWidget extends State<ListeningWidget> {
                     MMAdBanner(
                       adUnitId: tabContentState.listening.storyAd.stUnitId,
                       adSize: AdmobBannerSize.BANNER,
+                      isKeepAlive: true,
                     ),
                 ],
               );
@@ -203,8 +222,11 @@ class _ListeningWidget extends State<ListeningWidget> {
                     ),
                   ],
                 ),
-                onTap: () {
+                onTap: () async{
                   widget.slugBloc.slug = recordList[index].slug;
+                  if(isNewAdsActivated) {
+                    await widget.slugBloc.storyBannerAd.disposeAllBanner();
+                  }
                   _listeningWidgetBloc.fetchListening(recordList[index].slug);
                 },
               );

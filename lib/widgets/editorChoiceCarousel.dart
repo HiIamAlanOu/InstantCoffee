@@ -6,9 +6,11 @@ import 'package:readr_app/widgets/carouselDisplayWidget.dart';
 
 class EditorChoiceCarousel extends StatefulWidget {
   final RecordList editorChoiceList;
+  final List<Function> functionList;
   final double aspectRatio;
   EditorChoiceCarousel({
     @required this.editorChoiceList,
+    @required this.functionList,
     this.aspectRatio = 16/9,
   });
 
@@ -48,7 +50,12 @@ class _EditorChoiceCarouselState extends State<EditorChoiceCarousel> {
         : Stack(
             children: [
               CarouselSlider(
-                items: _imageSliders(width, widget.editorChoiceList),
+                items: _imageSliders(
+                  width, 
+                  widget.editorChoiceList,
+                  widget.functionList,
+                  widget.aspectRatio,
+                ),
                 carouselController: _carouselController,
                 options: _options,
               ),
@@ -91,15 +98,24 @@ class _EditorChoiceCarouselState extends State<EditorChoiceCarousel> {
           );
   }
 
-  List<Widget> _imageSliders(double width, RecordList editorChoiceList) {
-    return editorChoiceList
-        .map(
-          (item) => CarouselDisplayWidget(
-            record: item, 
-            width: width,
-            aspectRatio: widget.aspectRatio,
-          ),
-        )
-        .toList();
+  List<Widget> _imageSliders(
+    double width, 
+    RecordList editorChoiceList,
+    List<Function> functionList,
+    double aspectRatio
+  ) {
+    List<Widget> result = List<Widget>();
+    for(int i=0; i<editorChoiceList.length; i++) {
+      result.add(
+        CarouselDisplayWidget(
+          record: editorChoiceList[i], 
+          width: width,
+          function: functionList[i],
+          aspectRatio: aspectRatio,
+        ),
+      );
+    }
+
+    return result;
   }
 }

@@ -6,20 +6,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:readr_app/helpers/apiResponse.dart';
 import 'package:readr_app/helpers/dataConstants.dart';
+import 'package:readr_app/helpers/storyBannerAd.dart';
 import 'package:readr_app/models/story.dart';
 import 'package:readr_app/models/storyAd.dart';
 import 'package:readr_app/services/storyService.dart';
 
 class StoryBloc {
+  StoryBannerAd _storyBannerAd;
   StoryService _storyService;
 
   StreamController _storyController;
-
   StreamSink<ApiResponse<Story>> get storySink => _storyController.sink;
-
   Stream<ApiResponse<Story>> get storyStream => _storyController.stream;
 
-  StoryBloc(String slug) {
+  StoryBloc(String slug, StoryBannerAd storyBannerAd) {
+    _storyBannerAd = storyBannerAd;
     _storyService = StoryService();
     _storyController = StreamController<ApiResponse<Story>>();
     fetchStory(slug);
@@ -58,7 +59,12 @@ class StoryBloc {
           break;
         }
       }
-
+      
+      if(isNewAdsActivated) {
+        _storyBannerAd.hdBannerAd.configBannerAd(story.storyAd.hDUnitId);
+        _storyBannerAd.stBannerAd.configBannerAd(story.storyAd.stUnitId);
+        await _storyBannerAd.loadAndShowAllBanner();
+      }
       sinkToAdd(ApiResponse.completed(story));
     } catch (e) {
       sinkToAdd(ApiResponse.error(e.toString()));

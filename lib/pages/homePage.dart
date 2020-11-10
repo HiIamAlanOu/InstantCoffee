@@ -6,6 +6,7 @@ import 'package:readr_app/helpers/apiResponse.dart';
 import 'package:readr_app/helpers/appLinkHelper.dart';
 import 'package:readr_app/helpers/appUpgradeHelper.dart';
 import 'package:readr_app/helpers/firebaseMessangingHelper.dart';
+import 'package:readr_app/helpers/listingBannerAd.dart';
 import 'package:readr_app/models/sectionList.dart';
 import 'package:readr_app/models/section.dart';
 import 'package:readr_app/pages/searchPage.dart';
@@ -31,12 +32,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   AppLinkHelper _appLinkHelper;
   FirebaseMessangingHelper _firebaseMessangingHelper;
 
+  List<ListingBannerAd> _listingBannerList;
   List<ScrollController> _scrollControllerList;
   SectionBloc _sectionBloc;
 
   /// tab controller
-  int initialTabIndex = 0;
+  int _initialTabIndex = 0;
   TabController _tabController;
+  List<GlobalKey> _tabKeyList = List<GlobalKey>();
   List<Tab> _tabs = List<Tab>();
   List<Widget> _tabWidgets = List<Widget>();
 
@@ -53,9 +56,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
       }
     });
 
+    _listingBannerList = List<ListingBannerAd>();
     _scrollControllerList = List<ScrollController>();
     _sectionBloc = SectionBloc();
     super.initState();
+  }
+
+  _getTabSizeAndPosition(GlobalKey key) {
+    RenderBox _tabBox = key.currentContext.findRenderObject();
+    Size size = _tabBox.size;
+    Offset offset = _tabBox.localToGlobal(Offset.zero);
+    print(size);
+    print(offset);
   }
 
   @override
@@ -68,13 +80,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   }
 
   _initializeTabController(SectionList sectionItems) {
+    _listingBannerList.clear();
+    _scrollControllerList.clear();
+    _tabKeyList.clear();
     _tabs.clear();
     _tabWidgets.clear();
 
     for (int i = 0; i < sectionItems.length; i++) {
+      _tabKeyList.add(GlobalKey());
       Section section = sectionItems[i];
       _tabs.add(
         Tab(
+          key: _tabKeyList[i],
           child: Text(
             section.title,
             style: TextStyle(
@@ -84,10 +101,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
         ),
       );
 
+      _listingBannerList.add(ListingBannerAd());
       _scrollControllerList.add(ScrollController());
       if (section.key == listeningSectionKey) {
         _tabWidgets.add(ListeningTabContent(
           section: section,
+          listingBannerAd: _listingBannerList[i],
           scrollController: _scrollControllerList[i],
         ));
       } else if (section.key == personalSectionKey){
@@ -97,6 +116,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
       } else {
         _tabWidgets.add(TabContent(
           section: section,
+          listingBannerAd: _listingBannerList[i],
           scrollController: _scrollControllerList[i],
           needCarousel: i == 0,
         ));
@@ -108,8 +128,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
       vsync: this,
       length: sectionItems.length,
       initialIndex:
-          _tabController == null ? initialTabIndex : _tabController.index,
+          _tabController == null ? _initialTabIndex : _tabController.index,
     );
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {  _getTabSizeAndPosition(_tabKeyList[2]); });
   }
 
   _scrollToTop(int index) {
@@ -153,6 +174,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
                 SectionList sectionList = snapshot.data.data;
                 _initializeTabController(sectionList);
 
+                // return Stack(
+                //   children: [
+                //     _buildTabs(_tabs, _tabWidgets, _tabController),
+                //     Positioned(
+                //       left: 120,
+                //       child: Container(
+                //         width: 56.0+32,
+                //         height: 46.0,
+                //         color: Colors.black,
+                //       ),
+                //     )
+                //   ],
+                // );
                 return _buildTabs(_tabs, _tabWidgets, _tabController);
                 break;
 
@@ -172,13 +206,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
       elevation: 0.1,
       leading: IconButton(
         icon: Icon(Icons.settings),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotificationSettingsPage(),
-            fullscreenDialog: true,
-          ),
-        ),
+        onPressed: () async{
+          int index = _initialTabIndex;
+          if(isNewAdsActivated && _listingBannerList.length > 0) {
+            for(int i=0; i<_listingBannerList.length; i++) {
+              _listingBannerList[i].disposeAllBanner();
+            }
+            
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NotificationSettingsPage(),
+                fullscreenDialog: true,
+              ),
+            );
+            _listingBannerList[index].runningAllBanner(
+              _sectionBloc.sectionList[index].sectionAd.stUnitId,
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NotificationSettingsPage(),
+                fullscreenDialog: true,
+              ),
+            );
+          }
+        }
       ),
       backgroundColor: appColor,
       centerTitle: true,
@@ -187,13 +241,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
         IconButton(
           icon: Icon(Icons.search),
           tooltip: 'Search',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SearchPage(),
-              fullscreenDialog: true,
-            ),
-          ),
+          onPressed: () async{
+            int index = _initialTabIndex;
+            if(isNewAdsActivated && _listingBannerList.length > 0) {
+              for(int i=0; i<_listingBannerList.length; i++) {
+                _listingBannerList[i].disposeAllBanner();
+              }
+
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SearchPage(),
+                  fullscreenDialog: true,
+                ),
+              );
+              _listingBannerList[index].runningAllBanner(
+                _sectionBloc.sectionList[index].sectionAd.stUnitId,
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SearchPage(),
+                  fullscreenDialog: true,
+                ),
+              );
+            }
+          }
         ),
       ],
     );
@@ -215,10 +289,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
               tabs: tabs.toList(),
               controller: tabController,
               onTap: (int index) {
-                if (initialTabIndex == index) {
+                if (_initialTabIndex == index) {
                   _scrollToTop(index);
                 }
-                initialTabIndex = index;
+                _initialTabIndex = index;
               },
             ),
           ),
