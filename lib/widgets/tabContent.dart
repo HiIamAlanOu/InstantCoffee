@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:readr_app/blocs/tabContentBloc.dart';
 import 'package:readr_app/helpers/apiResponse.dart';
+import 'package:readr_app/helpers/appsFlyerHelper.dart';
 import 'package:readr_app/helpers/dataConstants.dart';
 import 'package:readr_app/helpers/routeGenerator.dart';
 import 'package:readr_app/models/record.dart';
@@ -29,10 +30,12 @@ class TabContent extends StatefulWidget {
 }
 
 class _TabContentState extends State<TabContent> {
+  AppsFlyerHelper _appsFlyerHelper;
   TabContentBloc _tabContentBloc;
 
   @override
   void initState() {
+    _appsFlyerHelper = AppsFlyerHelper();
     _tabContentBloc = TabContentBloc(
       widget.section.sectionAd,
       widget.section.key, 
@@ -255,7 +258,16 @@ class _TabContentState extends State<TabContent> {
           ),
         ],
       ),
-      onTap: () => RouteGenerator.navigateToStory(context, record.slug),
+      onTap: () {
+        _appsFlyerHelper.logEvent(
+          'NavigateToStoryPage', 
+          {
+            'slug': record.slug,
+            'isListeningWidget': false,
+          },
+        );
+        RouteGenerator.navigateToStory(context, record.slug);
+      }
     );
   }
 
@@ -307,7 +319,16 @@ class _TabContentState extends State<TabContent> {
           ],
         ),
       ),
-      onTap: () => RouteGenerator.navigateToStory(context, record.slug),
+      onTap: () {
+        _appsFlyerHelper.logEvent(
+          'NavigateToStoryPage', 
+          {
+            'slug': record.slug,
+            'isListeningWidget': false,
+          },
+        );
+        RouteGenerator.navigateToStory(context, record.slug);
+      }
     );
   }
 }

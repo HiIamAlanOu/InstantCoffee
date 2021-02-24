@@ -62,4 +62,9 @@ class AppsFlyerHelper {
     );
     print(k);
   }
+
+  void logEvent(String eventName, Map eventValues) async{
+    bool logSuccess = await _appsflyerSdk.logEvent(eventName, eventValues);
+    print('Appsflyer log event: $eventName - $logSuccess');
+  }
 }
